@@ -100,13 +100,13 @@ dat2 <- read_excel(flux_files[i], skip=header_rows_bot, col_names=FALSE) %>%
   ) %>%
   select(Abbr, everything())
 
-est_obs_err <- function(filename, nut, alpha=0.05) {
+est_obs_err <- function(dat, nut, alpha=0.05) {
   col_y <- paste0(nut, '_Flux_ty')
   col_ymin <- paste0(nut, '_Flux_lo_ty')
   col_ymax <- paste0(nut, '_Flux_hi_ty')
   
   qci <- qt(1 - alpha/2, df=Inf) # use df=Inf because we don't know the df for each load estimate, and it varies
-  select_(dat2, .dots=c('Water_Year', y=col_y, ymin=col_ymin, ymax=col_ymax)) %>% 
+  select_(dat, .dots=c('Water_Year', y=col_y, ymin=col_ymin, ymax=col_ymax)) %>% 
     filter(., complete.cases(.)) %>%
     mutate(
       # rloadest CIs are based on lognormal distributions, but I think we want
@@ -124,8 +124,9 @@ est_obs_err <- function(filename, nut, alpha=0.05) {
       Var = mean(Var))
 }
 SDs <- bind_rows(lapply(c('NO23_N','TKN_N','NH3_N','TP_P','OrthoP_P','SiO2'), function(nut)
-  est_obs_err(filename=localfile, nut)
-))
+  est_obs_err(dat=dat2, nut)
+)) %>%
+  mutate(sqrtVar=sqrt(Var))
 write.csv(SDs, file='obs_err_MARB.csv', row.names=FALSE)
 
 
@@ -135,3 +136,11 @@ data.frame(df=exp(0:10), qci=sapply(exp(0:10), function(x) qt(1 - alpha/2, df=x)
   scale_x_log10(breaks=c(1,10,100,1000,10000)) + scale_y_log10(limits=c(1.5,13), breaks=c(1.5,2,3,5,10)) +
   theme_bw()
 
+
+library(ggplot2)
+SDs %>% 
+  select(-Var) %>%
+  gather(variable, value, SD, sqrtVar) %>%
+  ggplot(aes(x=solute, y=value, color=variable)) + geom_point(alpha=0.5) +
+  theme_bw() + theme(axis.text.x = element_text(angle=90))
+ggsave(filename='obs_err_MARB.png', height=3, width=7)
