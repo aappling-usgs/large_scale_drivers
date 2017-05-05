@@ -70,8 +70,8 @@ est_ratio_var <- function(dat_num, dat_denom, assume_cor=1, alpha=0.05) {
 est_obs_err <- function(dat, alpha=0.05) {
   dat %>%
     summarize(
-      Value = mean(Value),
-      Var = mean(Var),
+      Value = median(Value),
+      Var = median(Var),
       SD = sqrt(Var))
 }
 
