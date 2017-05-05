@@ -5,6 +5,6 @@
 *.Rproj
 *.xls
 *.xlsx
-*.csv
+01_import/*/*.csv
 *.Rds
 *.png
